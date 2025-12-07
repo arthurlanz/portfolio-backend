@@ -1,7 +1,7 @@
 import threading
 import logging
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import Mail, Email, ReplyTo
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -15,78 +15,162 @@ def send_email_async(message, ip_address):
         try:
             email_html = f"""
             <!DOCTYPE html>
-            <html>
+            <html lang="pt-BR">
             <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
-                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                    .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                               color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                    .content {{ background: #f9f9f9; padding: 30px; border: 1px solid #e0e0e0; }}
-                    .info-box {{ background: white; padding: 20px; margin: 20px 0; border-radius: 5px; 
-                                 border-left: 4px solid #667eea; }}
-                    .info-label {{ font-weight: bold; color: #667eea; margin-bottom: 5px; }}
-                    .message-box {{ background: white; padding: 20px; border-radius: 5px; margin-top: 20px; }}
-                    .footer {{ background: #333; color: #999; padding: 20px; text-align: center; 
-                              font-size: 12px; border-radius: 0 0 10px 10px; }}
+                    body {{
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f5f5f5;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 20px auto;
+                        background: #ffffff;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }}
+                    .header {{
+                        background: #2c3e50;
+                        color: #ffffff;
+                        padding: 30px 20px;
+                        text-align: center;
+                    }}
+                    .header h1 {{
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 600;
+                    }}
+                    .content {{
+                        padding: 30px;
+                    }}
+                    .field {{
+                        margin-bottom: 20px;
+                        padding-bottom: 20px;
+                        border-bottom: 1px solid #eee;
+                    }}
+                    .field:last-child {{
+                        border-bottom: none;
+                    }}
+                    .label {{
+                        font-weight: 600;
+                        color: #2c3e50;
+                        margin-bottom: 5px;
+                        font-size: 14px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }}
+                    .value {{
+                        color: #555;
+                        font-size: 16px;
+                    }}
+                    .message-content {{
+                        background: #f9f9f9;
+                        padding: 20px;
+                        border-radius: 4px;
+                        border-left: 3px solid #2c3e50;
+                        margin-top: 10px;
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                    }}
+                    .metadata {{
+                        background: #f0f0f0;
+                        padding: 15px;
+                        margin-top: 20px;
+                        border-radius: 4px;
+                        font-size: 13px;
+                        color: #666;
+                    }}
+                    .footer {{
+                        background: #f8f9fa;
+                        padding: 20px;
+                        text-align: center;
+                        font-size: 12px;
+                        color: #999;
+                        border-top: 1px solid #e0e0e0;
+                    }}
+                    a {{
+                        color: #2c3e50;
+                        text-decoration: none;
+                    }}
+                    a:hover {{
+                        text-decoration: underline;
+                    }}
                 </style>
             </head>
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>✉️ Nova Mensagem do Portfolio</h1>
+                        <h1>Nova Mensagem de Contato</h1>
                     </div>
+                    
                     <div class="content">
-                        <div class="info-box">
-                            <div class="info-label">👤 Nome:</div>
-                            <div>{message.name}</div>
+                        <div class="field">
+                            <div class="label">Nome</div>
+                            <div class="value">{message.name}</div>
                         </div>
-                        <div class="info-box">
-                            <div class="info-label">📧 Email:</div>
-                            <div><a href="mailto:{message.email}">{message.email}</a></div>
+                        
+                        <div class="field">
+                            <div class="label">E-mail</div>
+                            <div class="value"><a href="mailto:{message.email}">{message.email}</a></div>
                         </div>
-                        <div class="info-box">
-                            <div class="info-label">📝 Assunto:</div>
-                            <div>{message.subject}</div>
+                        
+                        <div class="field">
+                            <div class="label">Assunto</div>
+                            <div class="value">{message.subject}</div>
                         </div>
-                        <div class="message-box">
-                            <div class="info-label">💬 Mensagem:</div>
-                            <p>{message.message}</p>
+                        
+                        <div class="field">
+                            <div class="label">Mensagem</div>
+                            <div class="message-content">{message.message}</div>
                         </div>
-                        <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 5px;">
-                            <small>
-                                <strong>📅 Data:</strong> {message.created_at.strftime('%d/%m/%Y às %H:%M')}<br>
-                                <strong>🌐 IP:</strong> {ip_address}
-                            </small>
+                        
+                        <div class="metadata">
+                            <strong>Informações adicionais:</strong><br>
+                            Data e hora: {message.created_at.strftime('%d/%m/%Y às %H:%M')}<br>
+                            IP de origem: {ip_address}
                         </div>
                     </div>
+                    
                     <div class="footer">
-                        <p>Enviado via Portfolio - Arthur Lanznaster</p>
-                        <p>Este é um email automático, não responda.</p>
+                        <p>Mensagem recebida através do formulário de contato do portfolio<br>
+                        Arthur Lanznaster</p>
                     </div>
                 </div>
             </body>
             </html>
             """
 
-            # Criar email
+            # Criar email com configurações profissionais
             email_message = Mail(
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=Email(settings.DEFAULT_FROM_EMAIL, 'Portfolio Arthur Lanznaster'),
                 to_emails=settings.CONTACT_EMAIL,
-                subject=f'[Portfolio] {message.subject}',
+                subject=f'Contato: {message.subject}',
                 html_content=email_html
             )
+            
+            # Adicionar Reply-To para responder diretamente ao remetente
+            email_message.reply_to = ReplyTo(message.email, message.name)
 
             # Enviar via SendGrid
             sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
             response = sg.send(email_message)
             
-            logger.info(f'✅ Email enviado com sucesso via SendGrid: {message.name} - Status: {response.status_code}')
+            print(f'Email enviado com sucesso! Status: {response.status_code}')
+            logger.info(f'Email enviado: {message.name} ({message.email}) - Status: {response.status_code}')
+            
         except Exception as e:
-            logger.error(f'❌ Erro ao enviar email via SendGrid: {str(e)}')
+            print(f'Erro ao enviar email: {str(e)}')
+            logger.error(f'Erro ao enviar email via SendGrid: {str(e)}')
     
-    # Criar e iniciar thread
+    # Executar envio em background
     thread = threading.Thread(target=send)
     thread.daemon = True
     thread.start()
-    logger.info(f'📤 Email agendado via SendGrid para: {message.email}')
+    logger.info(f'Email agendado para envio: {message.email}')

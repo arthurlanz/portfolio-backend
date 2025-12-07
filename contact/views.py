@@ -21,7 +21,7 @@ def send_contact_message(request):
     """
     Endpoint para enviar mensagem de contato
     """
-    # Pegar IP do cliente
+    # Obter IP do cliente
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip_address = x_forwarded_for.split(',')[0]
@@ -39,30 +39,20 @@ def send_contact_message(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Salvar mensagem no banco
+        # Salvar mensagem no banco de dados
         message = serializer.save(ip_address=ip_address)
         
-        # PRINT para garantir que aparece nos logs do Render
-        print(f'✅ MENSAGEM SALVA: ID={message.id}, Nome={message.name}, Email={message.email}')
-        print(f'🔑 SENDGRID_API_KEY existe: {hasattr(settings, "SENDGRID_API_KEY")}')
+        logger.info(f'Nova mensagem de contato: {message.name} ({message.email})')
         
-        if hasattr(settings, 'SENDGRID_API_KEY'):
-            api_key_preview = settings.SENDGRID_API_KEY[:15] if settings.SENDGRID_API_KEY else 'VAZIO'
-            print(f'🔑 SENDGRID_API_KEY valor: {api_key_preview}...')
-        
-        # Verificar se SENDGRID_API_KEY existe e não está vazia
+        # Enviar notificação por email se SendGrid estiver configurado
         if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
-            print(f'📧 Chamando send_email_async para: {message.email}')
             send_email_async(message, ip_address)
-            print(f'✅ send_email_async CHAMADA COM SUCESSO!')
         else:
-            print(f'❌ SENDGRID_API_KEY NÃO CONFIGURADA! Email NÃO será enviado.')
-        
-        logger.info(f'Mensagem de contato salva: {message.name} - {message.email}')
+            logger.warning('SendGrid não configurado. Email não será enviado.')
 
         return Response({
             'success': True,
-            'message': '✅ Mensagem enviada com sucesso! Responderei em breve.',
+            'message': 'Mensagem enviada com sucesso! Responderei em breve.',
             'data': {
                 'id': message.id,
                 'name': message.name,
@@ -73,22 +63,21 @@ def send_contact_message(request):
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        print(f'❌ ERRO ao processar mensagem: {str(e)}')
         logger.error(f'Erro ao processar mensagem: {str(e)}')
         return Response({
             'success': False,
-            'message': 'Erro ao processar mensagem. Tente novamente.',
-            'error': str(e)
+            'message': 'Erro ao processar sua mensagem. Por favor, tente novamente.',
+            'error': str(e) if settings.DEBUG else None
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
 def health_check(request):
     """
-    Endpoint para verificar se a API está funcionando
+    Endpoint para verificar status da API
     """
     return Response({
         'status': 'online',
-        'message': 'Backend do Portfolio funcionando!',
+        'message': 'API do Portfolio funcionando',
         'version': '1.0.0'
     })
