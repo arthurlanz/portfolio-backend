@@ -42,15 +42,23 @@ def send_contact_message(request):
         # Salvar mensagem no banco
         message = serializer.save(ip_address=ip_address)
         
-        logger.info(f'✅ Mensagem salva no banco: ID={message.id}, Nome={message.name}')
+        # PRINT para garantir que aparece nos logs do Render
+        print(f'✅ MENSAGEM SALVA: ID={message.id}, Nome={message.name}, Email={message.email}')
+        print(f'🔑 SENDGRID_API_KEY existe: {hasattr(settings, "SENDGRID_API_KEY")}')
         
-        # Verificar se SENDGRID_API_KEY existe
+        if hasattr(settings, 'SENDGRID_API_KEY'):
+            api_key_preview = settings.SENDGRID_API_KEY[:15] if settings.SENDGRID_API_KEY else 'VAZIO'
+            print(f'🔑 SENDGRID_API_KEY valor: {api_key_preview}...')
+        
+        # Verificar se SENDGRID_API_KEY existe e não está vazia
         if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
-            logger.info(f'📧 Iniciando envio de email via SendGrid para: {message.email}')
+            print(f'📧 Chamando send_email_async para: {message.email}')
             send_email_async(message, ip_address)
-            logger.info(f'✅ Função send_email_async chamada com sucesso!')
+            print(f'✅ send_email_async CHAMADA COM SUCESSO!')
         else:
-            logger.warning(f'⚠️ SENDGRID_API_KEY não configurada! Email NÃO será enviado.')
+            print(f'❌ SENDGRID_API_KEY NÃO CONFIGURADA! Email NÃO será enviado.')
+        
+        logger.info(f'Mensagem de contato salva: {message.name} - {message.email}')
 
         return Response({
             'success': True,
@@ -65,7 +73,8 @@ def send_contact_message(request):
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        logger.error(f'❌ Erro ao processar mensagem: {str(e)}')
+        print(f'❌ ERRO ao processar mensagem: {str(e)}')
+        logger.error(f'Erro ao processar mensagem: {str(e)}')
         return Response({
             'success': False,
             'message': 'Erro ao processar mensagem. Tente novamente.',
