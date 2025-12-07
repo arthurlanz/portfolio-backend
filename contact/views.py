@@ -5,14 +5,14 @@ from rest_framework.response import Response
 from django.conf import settings
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer
-from .tasks import send_email_async  # ← IMPORTAR AQUI!
+from .tasks import send_email_async
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ContactThrottle(AnonRateThrottle):
-    rate = '5/hour'  # 5 mensagens por hora por IP
+    rate = '5/hour'
 
 
 @api_view(['POST'])
@@ -41,11 +41,16 @@ def send_contact_message(request):
     try:
         # Salvar mensagem no banco
         message = serializer.save(ip_address=ip_address)
-
-        # ← ADICIONAR ESTA LINHA! Enviar email em background
-        send_email_async(message, ip_address)
-
-        logger.info(f'Mensagem de contato salva: {message.name} - {message.email}')
+        
+        logger.info(f'✅ Mensagem salva no banco: ID={message.id}, Nome={message.name}')
+        
+        # Verificar se SENDGRID_API_KEY existe
+        if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
+            logger.info(f'📧 Iniciando envio de email via SendGrid para: {message.email}')
+            send_email_async(message, ip_address)
+            logger.info(f'✅ Função send_email_async chamada com sucesso!')
+        else:
+            logger.warning(f'⚠️ SENDGRID_API_KEY não configurada! Email NÃO será enviado.')
 
         return Response({
             'success': True,
@@ -60,7 +65,7 @@ def send_contact_message(request):
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        logger.error(f'Erro ao processar mensagem: {str(e)}')
+        logger.error(f'❌ Erro ao processar mensagem: {str(e)}')
         return Response({
             'success': False,
             'message': 'Erro ao processar mensagem. Tente novamente.',
