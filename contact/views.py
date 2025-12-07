@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.conf import settings
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer
-from .tasks import send_email_async  # ← IMPORTAR A FUNÇÃO
+from .tasks import send_email_async  # ← IMPORTAR AQUI!
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def send_contact_message(request):
         # Salvar mensagem no banco
         message = serializer.save(ip_address=ip_address)
 
-        # Enviar email em background (não trava!)
+        # ← ADICIONAR ESTA LINHA! Enviar email em background
         send_email_async(message, ip_address)
 
         logger.info(f'Mensagem de contato salva: {message.name} - {message.email}')
