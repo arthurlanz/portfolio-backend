@@ -1,6 +1,7 @@
 import threading
 import logging
-from django.core.mail import send_mail
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -8,13 +9,10 @@ logger = logging.getLogger(__name__)
 
 def send_email_async(message, ip_address):
     """
-    Envia email em background usando threading
+    Envia email em background usando SendGrid
     """
     def send():
         try:
-            email_subject = f'[Portfolio] {message.subject}'
-            
-            # Email em HTML
             email_html = f"""
             <!DOCTYPE html>
             <html>
@@ -71,32 +69,24 @@ def send_email_async(message, ip_address):
             </html>
             """
 
-            send_mail(
-                subject=email_subject,
-                message=f"""
-Nova mensagem de contato
-
-Nome: {message.name}
-Email: {message.email}
-Assunto: {message.subject}
-
-Mensagem:
-{message.message}
-
-Data: {message.created_at.strftime('%d/%m/%Y às %H:%M')}
-IP: {ip_address}
-                """,
+            # Criar email
+            email_message = Mail(
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],
-                html_message=email_html,
-                fail_silently=False,
+                to_emails=settings.CONTACT_EMAIL,
+                subject=f'[Portfolio] {message.subject}',
+                html_content=email_html
             )
-            logger.info(f'✅ Email enviado com sucesso (async): {message.name} - {message.email}')
+
+            # Enviar via SendGrid
+            sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+            response = sg.send(email_message)
+            
+            logger.info(f'✅ Email enviado com sucesso via SendGrid: {message.name} - Status: {response.status_code}')
         except Exception as e:
-            logger.error(f'❌ Erro ao enviar email (async): {str(e)}')
+            logger.error(f'❌ Erro ao enviar email via SendGrid: {str(e)}')
     
     # Criar e iniciar thread
     thread = threading.Thread(target=send)
-    thread.daemon = True  # Thread morre com o processo principal
+    thread.daemon = True
     thread.start()
-    logger.info(f'📤 Email agendado em background para: {message.email}')
+    logger.info(f'📤 Email agendado via SendGrid para: {message.email}')
