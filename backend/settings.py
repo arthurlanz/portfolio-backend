@@ -168,6 +168,7 @@ GITHUB_FEATURED_REPOS = config('GITHUB_FEATURED_REPOS', cast=Csv(), default=','.
     'Equipe-Hackaton/Join-ville',
     'Equipe-Hackaton/backend-hackaton',
     'Equipe-Hackaton/pi_SededoMedo',
+    'fabricadesoftware-ifc/fabricaHackathon_frontEnd',
 ]))
 GITHUB_CACHE_SECONDS = config('GITHUB_CACHE_SECONDS', default=3600, cast=int)
 GITHUB_STALE_SECONDS = config('GITHUB_STALE_SECONDS', default=86400, cast=int)
