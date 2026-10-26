@@ -108,11 +108,27 @@ Envia uma nova mensagem de contato.
 - **5 mensagens por hora** por IP
 - Retorna `429 Too Many Requests` quando excedido
 
+### Dados do GitHub
+
+Endpoints **GET**, públicos e somente leitura, que alimentam o portfólio. Os dados vêm da API do GitHub e ficam em cache por 1 hora. Se o GitHub falhar, a última cópia boa continua sendo servida com `"stale": true`; se não houver cópia, a resposta é `503` com um `code` explicando o motivo.
+
+| Rota | O que devolve |
+|---|---|
+| `/api/github/summary/` | Perfil, total de commits, organizações e linguagens mais usadas |
+| `/api/github/contributions/` | Calendário dos últimos 12 meses (semanas, dias e nível de cada dia) |
+| `/api/github/activity/` | Últimos commits em repositórios públicos |
+| `/api/github/projects/` | Repositórios em destaque, com os seus commits e o total de cada um |
+
+**Calendário:** com `GITHUB_TOKEN`, usa o GraphQL e traz o mesmo calendário do perfil, mais PRs, reviews e issues. Sem token, monta o calendário pela busca de commits públicos (`source: "search"`) e avisa em `truncated` quando o limite de 1000 resultados da busca corta o período.
+
+Limite: 120 requisições por minuto por IP (separado do limite do formulário).
+
 ## 🗂️ Estrutura do Projeto
 
     portfolio-backend/
     ├── backend/              # Configurações principais do Django
     ├── contact/              # App de contato
+    ├── github_stats/         # Dados da API do GitHub (cliente, serviços, views e testes)
     ├── staticfiles/          # Arquivos estáticos coletados
     ├── requirements.txt      # Dependências Python
     ├── build.sh             # Script de build para Render
@@ -136,6 +152,10 @@ Envia uma nova mensagem de contato.
 | EMAIL_HOST_PASSWORD | Senha SMTP | Sim |
 | DEFAULT_FROM_EMAIL | Email remetente padrão | Sim |
 | CONTACT_EMAIL | Email para receber mensagens | Sim |
+| GITHUB_USERNAME | Usuário do GitHub mostrado no portfólio | Não (padrão: `arthurlanz`) |
+| GITHUB_TOKEN | Token do GitHub, sem escopos, para usar o GraphQL | Não |
+| GITHUB_FEATURED_REPOS | Repositórios em destaque, separados por vírgula (`dono/nome`) | Não |
+| GITHUB_CACHE_SECONDS | Tempo de cache dos dados | Não (padrão: 3600) |
 
 ## 🚀 Deploy no Render
 

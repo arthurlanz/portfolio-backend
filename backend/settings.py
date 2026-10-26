@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # Local apps
     'contact',
+    'github_stats',
 ]
 
 MIDDLEWARE = [
@@ -152,6 +153,29 @@ CONTACT_EMAIL = config('CONTACT_EMAIL')
 
 # SendGrid Configuration
 SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+
+# GitHub (dados do portfólio)
+GITHUB_USERNAME = config('GITHUB_USERNAME', default='arthurlanz')
+# Opcional. Com um token (sem nenhum escopo), o calendário usa o GraphQL e fica completo.
+GITHUB_TOKEN = config('GITHUB_TOKEN', default='')
+GITHUB_FEATURED_REPOS = config('GITHUB_FEATURED_REPOS', cast=Csv(), default=','.join([
+    'Panificadora-Pires/frontend-pires',
+    'Panificadora-Pires/backend-pires',
+    'DreamTeam-2k26/frontend',
+    'DreamTeam-2k26/backend',
+    'EquipePI-3info2/frontend',
+    'EquipePI-3info2/backend',
+    'Equipe-Hackaton/Join-ville',
+    'Equipe-Hackaton/backend-hackaton',
+    'Equipe-Hackaton/pi_SededoMedo',
+    'fabricadesoftware-ifc/fabricaHackathon_frontEnd',
+]))
+GITHUB_CACHE_SECONDS = config('GITHUB_CACHE_SECONDS', default=3600, cast=int)
+GITHUB_STALE_SECONDS = config('GITHUB_STALE_SECONDS', default=86400, cast=int)
+
+CACHES = {
+    'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'},
+}
 
 # Logging Configuration
 LOGGING = {
