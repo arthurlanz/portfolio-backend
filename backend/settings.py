@@ -77,7 +77,7 @@ else:
     if dj_database_url:
         DATABASES = {
             'default': dj_database_url.config(
-                default=config('DATABASE_URL'),
+                default=config('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
                 conn_max_age=600
             )
         }
@@ -208,6 +208,8 @@ LOGGING = {
 
 # Security Settings for Production
 if not DEBUG:
+    # Atrás do proxy do Dokku/Render, o HTTPS chega no cabeçalho X-Forwarded-Proto.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
     SECURE_SSL_REDIRECT = False
