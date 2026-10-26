@@ -22,7 +22,7 @@ API RESTful desenvolvida em Django para gerenciar o sistema de contato do portfo
 
 **1. Clone o repositório**
 
-    git clone https://github.com/arthurlanznaster/portfolio-backend.git
+    git clone https://github.com/arthurlanz/portfolio-backend.git
     cd portfolio-backend
 
 **2. Crie e ative o ambiente virtual**
@@ -169,7 +169,7 @@ Este projeto está sob a licença MIT.
 
 **Arthur Lanznaster**
 
-- GitHub: [@arthurlanznaster](https://github.com/arthurlanz)
+- GitHub: [@arthurlanz](https://github.com/arthurlanz)
 - Email: arthurlanznaster@gmail.com
 
 ## 🤝 Contribuindo
