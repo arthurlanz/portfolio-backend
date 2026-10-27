@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.conf import settings
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer
-from .tasks import send_email_async
+from .tasks import send_email_async, smtp_configured
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,10 +45,10 @@ def send_contact_message(request):
         logger.info(f'Nova mensagem de contato: {message.name} ({message.email})')
         
         # Enviar notificação por email se SendGrid estiver configurado
-        if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
+        if smtp_configured() or settings.SENDGRID_API_KEY:
             send_email_async(message, ip_address)
         else:
-            logger.warning('SendGrid não configurado. Email não será enviado.')
+            logger.warning('Nenhum provedor de e-mail configurado. A mensagem ficou só no banco.')
 
         return Response({
             'success': True,
