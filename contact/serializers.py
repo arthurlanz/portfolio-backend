@@ -12,7 +12,7 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         """Validar nome"""
         if len(value.strip()) < 3:
             raise serializers.ValidationError('Nome deve ter pelo menos 3 caracteres.')
-        if not re.match(r'^[a-zA-ZÀ-ÿ\s]+$', value):
+        if not re.match(r"^[a-zA-ZÀ-ÿ\s'.-]+$", value):
             raise serializers.ValidationError('Nome deve conter apenas letras.')
         return value.strip()
 

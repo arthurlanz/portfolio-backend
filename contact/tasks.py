@@ -3,8 +3,58 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, ReplyTo
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 
 logger = logging.getLogger(__name__)
+
+
+def smtp_configured():
+    return bool(settings.EMAIL_HOST and settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD)
+
+
+def send_via_smtp(message, subject, html):
+    """Envia pelo SMTP configurado em EMAIL_* (por exemplo, Gmail com senha de app)."""
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=f'{message.name} <{message.email}>\n\n{message.message}',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[settings.CONTACT_EMAIL],
+        reply_to=[message.email],
+    )
+    email.attach_alternative(html, 'text/html')
+    email.send(fail_silently=False)
+
+
+def send_via_sendgrid(message, subject, html):
+    """Envia pela API do SendGrid, usado como reserva."""
+    email_message = Mail(
+        from_email=Email(settings.DEFAULT_FROM_EMAIL, 'Portfolio Arthur Lanznaster'),
+        to_emails=settings.CONTACT_EMAIL,
+        subject=subject,
+        html_content=html,
+    )
+    email_message.reply_to = ReplyTo(message.email, message.name)
+    response = SendGridAPIClient(settings.SENDGRID_API_KEY).send(email_message)
+    return response.status_code
+
+
+def deliver(message, subject, html):
+    """Tenta o SMTP e, se falhar, o SendGrid. Devolve True quando algum entregou."""
+    if smtp_configured():
+        try:
+            send_via_smtp(message, subject, html)
+            logger.info(f'Email enviado por SMTP: {message.name} ({message.email})')
+            return True
+        except Exception as error:
+            logger.error(f'Falha ao enviar por SMTP: {error}')
+    if settings.SENDGRID_API_KEY:
+        try:
+            status = send_via_sendgrid(message, subject, html)
+            logger.info(f'Email enviado pelo SendGrid: {message.name} ({message.email}) - Status: {status}')
+            return True
+        except Exception as error:
+            logger.error(f'Falha ao enviar pelo SendGrid: {error}')
+    return False
 
 
 def send_email_async(message, ip_address):
@@ -147,24 +197,11 @@ def send_email_async(message, ip_address):
             </html>
             """
 
-            # Criar email com configurações profissionais
-            email_message = Mail(
-                from_email=Email(settings.DEFAULT_FROM_EMAIL, 'Portfolio Arthur Lanznaster'),
-                to_emails=settings.CONTACT_EMAIL,
-                subject=f'Contato: {message.subject}',
-                html_content=email_html
-            )
-            
-            # Adicionar Reply-To para responder diretamente ao remetente
-            email_message.reply_to = ReplyTo(message.email, message.name)
+            subject = f'Contato: {message.subject}'
+            if not deliver(message, subject, email_html):
+                logger.error(f'Nenhum provedor entregou a mensagem de {message.email} (id {message.id}). '
+                             'Ela continua salva no admin.')
 
-            # Enviar via SendGrid
-            sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-            response = sg.send(email_message)
-            
-            print(f'Email enviado com sucesso! Status: {response.status_code}')
-            logger.info(f'Email enviado: {message.name} ({message.email}) - Status: {response.status_code}')
-            
         except Exception as e:
             print(f'Erro ao enviar email: {str(e)}')
             logger.error(f'Erro ao enviar email via SendGrid: {str(e)}')
